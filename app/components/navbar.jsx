@@ -6,8 +6,11 @@ const Navbar = () => {
             <div className="logo">
                 <Link href="/">Ravishek&apos;s Portfolio</Link>
             </div>
-            <a href="" className="cta-btn">
-                Resume
+            <a
+                href="https://drive.google.com/uc?export=download&id=1COq7bQXnJlU5JUGbObQv96EquVaR_-xD"
+                className="cta-btn"
+            >
+                Download Resume
             </a>
         </div>
     );
