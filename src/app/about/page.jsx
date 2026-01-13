@@ -35,7 +35,7 @@ function MailIcon(props) {
 
 export const metadata = {
   title: 'About',
-  description: `I’m Ravishek Ranjan a Data Engineer from India, passionate about designing and building fast, scalable, and reliable data pipelines and systems. I enjoy exploring new technologies in the data ecosystem, staying updated with industry trends, and continuously improving my ability to deliver efficient, accessible, and impactful data solutions.`,
+  description: `I'm Ravishek Ranjan — a Data & Backend Engineer with 4 years of experience building scalable systems across insurance and automotive domains. Driven by curiosity and a passion for solving complex challenges.`,
 }
 
 export default function About() {
@@ -54,20 +54,20 @@ export default function About() {
         </div>
         <div className="lg:order-first lg:row-span-2">
           <h1 className="text-4xl font-bold tracking-tight text-zinc-800 sm:text-5xl dark:text-zinc-100">
-            Data & Backend Engineer who loves exploring, experimenting, and building systems that scale.
+            Data & Backend Engineer driven by curiosity and a passion for scalable systems.
           </h1>
           <div className="mt-6 space-y-7 text-base text-zinc-600 dark:text-zinc-400">
             <p>
-              Hi, I’m Ravishek Ranjan — a Data & Backend Engineer who loves turning complex challenges into scalable, reliable systems. For me, solving problems isn’t just a job, it’s a way to think, explore, and push boundaries.
+              Hi, I'm Ravishek Ranjan — a Data & Backend Engineer with 4 years of experience building scalable, reliable systems across insurance and automotive (Tekion) domains. For me, solving problems isn't just a job; it's a way to think, learn, and push boundaries.
             </p>
             <p>
-             I enjoy working in teams just as much as solving problems independently. Collaboration gives me different perspectives, while solo problem-solving helps me dive deep and explore outside-the-box approaches. I believe every challenge has multiple possibilities, and I love discussing, debating, and experimenting to find the best one.
+              I enjoy working in teams just as much as tackling challenges independently. Collaboration brings different perspectives, while solo work lets me dive deep and think outside the box. I believe every challenge has multiple solutions, and I love discussing and debating to find the best one.
             </p>
             <p>
-              Curiosity drives most of my work. I often end up doing POCs on new tools, architectures, or patterns — whether it’s exploring how new tools works, trying out AWS services, or experimenting with new data strategies. For me, research isn’t about theory alone; it’s about figuring out how something new can actually solve real problems.
+              Curiosity drives most of my work. I often run POCs on new tools, architectures, or patterns — whether it's diving into Apache Kafka internals, spinning up AWS Glue pipelines, or testing new data lakehouse strategies. Research isn't about theory alone; it's about figuring out how something new can solve real problems.
             </p>
             <p>
-              And when I’m not designing data pipelines or backend systems, you’ll probably find me solving DSA problems just for fun — keeping my brain sharp and my problem-solving instincts alive. At the end of the day, I just love building things that scale, perform, and make life easier.
+              When I'm not designing pipelines or backend systems, you'll find me reading about distributed systems or tinkering with side projects — anything that keeps me learning and building things that perform and make life easier.
             </p>
           </div>
         </div>
