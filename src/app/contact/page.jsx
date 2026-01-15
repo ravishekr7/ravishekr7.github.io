@@ -4,7 +4,7 @@ import { SimpleLayout } from '@/components/SimpleLayout'
 
 export const metadata = {
   title: 'Contact',
-  description: 'Contact me',
+  description: 'Get in touch with Ravishek Ranjan — open to discussing data engineering, collaborations, or interesting projects.',
 }
 
 function SocialLink({ icon: Icon, ...props }) {
@@ -26,11 +26,11 @@ function MailIcon(props) {
   )
 }
 
-export default function Speaking() {
+export default function Contact() {
   return (
     <SimpleLayout
-      title="Contact me."
-      intro="Feel free to contact me via LinkedIn, X (Twitter), or email (DMs are open). I'll respond within a day. If you have an interesting project or collaboration opportunity, I'd love to hear from you."
+      title="Let's connect."
+      intro="Have a question, project idea, or just want to chat about data engineering? Reach out via LinkedIn, X, or email — DMs are open and I typically respond within a day."
     >
       <div className="mt-6 flex gap-6">
         <SocialLink

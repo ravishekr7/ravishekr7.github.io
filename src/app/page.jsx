@@ -297,7 +297,7 @@ export default async function Home() {
             Hi there, I'm Ravishek
           </h1>
           <p className="mt-6 text-base text-zinc-600 dark:text-zinc-400">
-            I’m a Data Engineer from India, passionate about designing and building fast, scalable, and reliable data pipelines and systems. I enjoy exploring new technologies in the data ecosystem, staying updated with industry trends, and continuously improving my ability to deliver efficient, accessible, and impactful data solutions.  
+            I'm a Data & Backend Engineer with 4 years of experience building scalable systems across insurance and automotive domains. Currently at Guidewire, I design data pipelines and backend services using Kafka, AWS Glue, EMR, Athena, and Iceberg. I enjoy diving deep into distributed systems and exploring modern data lakehouse architectures.
           </p>
           <div className="mt-6 flex gap-6 items-center flex-wrap">
             <SocialLink
