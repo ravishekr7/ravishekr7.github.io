@@ -4,6 +4,7 @@ import { Card } from '@/components/Card'
 import { SimpleLayout } from '@/components/SimpleLayout'
 import Probot from '@/images/logos/probot.png'
 import Cmhp from '@/images/logos/cmhp.png'
+import RoomSignal from '@/images/logos/roomsignal.png'
 
 const projects = [
   {
@@ -21,10 +22,20 @@ const projects = [
     description:
       'Contributed to an open-source full-stack project for hospitals, building features in Go (backend) and React (frontend) to support reservations and financial reporting.',
     link: {
-      href: 'https://https://www.missionvivekananda.org.in/cmhp/',
+      href: 'https://www.missionvivekananda.org.in/cmhp/',
       label: 'missionvivekananda.org',
     },
     logo: Cmhp,
+  },
+  {
+    name: 'RoomSignal',
+    description:
+      'A WiFi network analyzer for macOS that helps you find the best network for your current location in your house.',
+    link: {
+      href: 'https://github.com/ravishekr7/RoomSignal',
+      label: 'github.com',
+    },
+    logo: RoomSignal,
   },
 ]
 
@@ -41,14 +52,14 @@ function LinkIcon(props) {
 
 export const metadata = {
   title: 'Projects',
-  description: 'Apps I’ve made trying to put my dent in the universe.',
+  description: "Projects I've built exploring data engineering, backend systems, and automation tools.",
 }
 
 export default function Projects() {
   return (
     <SimpleLayout
       title="Things I’ve built to learn, explore, and make an impact."
-      intro="I’ve explored data engineering, backend systems, and a bit of AI experimentation. These projects capture the ones I’m most proud of — from solving real scalability challenges to tinkering with automation tools. Feel free to reach out if you’ve got ideas, feedback, or just want to geek out about data systems."
+      intro="I've explored data engineering, backend systems, and a bit of AI experimentation. These projects capture the ones I'm most proud of — from solving real scalability challenges to tinkering with automation tools."
     >
       <ul
         role="list"
