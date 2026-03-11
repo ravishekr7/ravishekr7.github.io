@@ -1,0 +1,264 @@
+import { ArticleLayout } from '@/components/ArticleLayout'
+import LangflowPipeline from './langflow-pipeline.png'
+
+export const dynamic = 'force-static'
+
+export const article = {
+  author: 'Ravishek Ranjan',
+  date: '2026-03-06',
+  title: 'Building AI Agents Locally with LangFlow and Docker — No Installation Headaches',
+  description: 'A hands-on guide to running LangFlow via Docker, getting Gemini API keys, and the hard-won lessons from building multi-agent pipelines — including the ruleset that lets AI build other AI agents.',
+  slug: 'langflow-docker-ai-agents-local-setup',
+  tags: ['AI Agents', 'LangFlow', 'Docker', 'Gemini', 'LLM', 'Automation'],
+}
+
+export const metadata = {
+  title: article.title,
+  description: article.description,
+}
+
+export default (props) => <ArticleLayout article={article} {...props} />
+
+Over the last few weeks I built a multi-agent Gmail automation pipeline: fetching junk emails via IMAP, analyzing them with LLMs, generating reports, and automatically unsubscribing from spam — all orchestrated through LangFlow.
+
+The surprising part wasn't building the agents.
+It was everything around them.
+
+Getting a reproducible local environment.
+Feeding the right structure to LLMs.
+And defining rules strict enough that AI can reliably generate new agents for the system.
+
+This post walks through the full journey — Docker setup, pipeline architecture, hard-won lessons from building multi-agent pipelines, the ruleset approach that finally made the system stable, and Gemini integration.
+
+---
+
+### Why LangFlow + Docker?
+
+LangFlow is an open-source visual framework for building LLM-powered pipelines. You drag and drop components — each one a Python class — connect them with edges, and run complex multi-step workflows. Think of it as Airflow for AI agents, but with a visual canvas.
+
+The problem? Installing LangFlow natively means dealing with Python version conflicts, dependency hell, and platform-specific issues. Docker eliminates all of that.
+
+One command, and you have a fully working LangFlow instance:
+
+```bash
+docker run -d \
+  --name langflow \
+  -p 7860:7860 \
+  -v ./workspace:/workspace \
+  langflowai/langflow:latest
+```
+
+That's it. Open `http://localhost:7860`, and you're building agents.
+
+The `-v ./workspace:/workspace` mount is key — it lets your agents read and write files (OAuth tokens, log files, reports) from your host machine. No need to SSH into containers or rebuild images when you update a config file.
+
+Your agent code lives as **plain Python files** on your host. Each component is a self-contained Python class that LangFlow knows how to execute. The workflow JSON — which defines how agents connect — gets imported directly into the Docker-hosted LangFlow UI.
+
+The development loop:
+
+1. Write or edit a component in `components/my_agent.py` (normal Python, your favourite editor)
+2. The component's source code is embedded into the workflow JSON
+3. Import the JSON into LangFlow's Docker UI
+4. Test, iterate, repeat
+
+You never install LangFlow, IMAP libraries, or Gemini SDKs on your host. Everything runs inside Docker. Want to add a new agent? Create a new `.py` file in the components folder, define its inputs and outputs, and wire it into the flow. The modular design means you can swap, add, or remove agents without touching the rest of the pipeline.
+
+---
+
+### The Pipeline Architecture
+
+Our Gmail junk email analyzer has 8 agents working together across two parallel paths:
+
+```
+    IMAPEmailFetcher
+            │
+            ▼
+        EmailParser
+            │
+            ├── DataStructurer ──► GeminiSummarizer
+            │                  └─► GeminiMailerList
+            │
+            └── AutoUnsubscribeToggle ─► LoggingNode
+                                              │
+                                              ▼
+                                   FinalOutputAggregator
+```
+
+Here's what each agent does:
+
+1. **IMAPEmailFetcher** — connects to Gmail via IMAP/OAuth2, fetches emails from the Spam folder
+2. **EmailParser** — extracts metadata: sender, domain, subject, unsubscribe URLs
+3. **DataStructurer** — categorizes emails (Promotions, Finance, Crypto, Shopping, etc.) and aggregates stats
+4. **GeminiSummarizer** — LLM-generated summary report with trends and suspicious patterns
+5. **GeminiMailerList** — LLM-generated markdown table of all mailers with unsubscribe recommendations
+6. **AutoUnsubscribeToggle** — async HTTP executor that hits unsubscribe URLs (with dry run mode)
+7. **LoggingNode** — structures and persists execution logs to JSON
+8. **FinalOutputAggregator** — merges everything into one comprehensive markdown report
+
+The pipeline branches after EmailParser into two parallel paths:
+- **Analysis path**: Structure → Summarize + Mailer List (two Gemini calls in parallel)
+- **Cleanup path**: Unsubscribe → Log results
+
+Both paths merge at FinalOutputAggregator, which produces a single comprehensive markdown report with the summary, mailer table, and (optionally) the unsubscribe execution log.
+
+Here's how it looks in the LangFlow canvas — 8 nodes, 9 edges, all running inside Docker:
+
+<Image src={LangflowPipeline} alt="LangFlow canvas showing the complete Gmail junk email analyzer pipeline with 8 connected agents" />
+
+Each component is a standalone Python file. The workflow JSON embeds their source code and defines the connections. This means you can edit any component independently, test in isolation, swap out the Gemini nodes for different LLM providers, or disable the unsubscribe path by toggling `auto_unsubscribe=false`.
+
+---
+
+### Do's and Don'ts from Building These Agents
+
+After building 8 interconnected agents — email fetching, parsing, categorization, LLM analysis, auto-unsubscribing, logging, and report aggregation — here's what I wish I knew from day one.
+
+#### Do: Use `HandleInput` for Inter-Agent Connections
+
+LangFlow has two types of inputs: `HandleInput` (receives data from another node via edges) and `MessageTextInput` (user types a value). If you use `MessageTextInput` for a connection input, you'll get a cryptic `text key validation error` at runtime. Every connection between agents must use `HandleInput` with `type: "other"`.
+
+```python
+# Correct — connection from another agent
+HandleInput(
+    name="raw_emails",
+    display_name="Raw Emails",
+    input_types=["Data"],
+    required=True,
+)
+
+# Wrong — this is for user-typed values only
+MessageTextInput(
+    name="raw_emails",
+    display_name="Raw Emails",
+)
+```
+
+#### Do: Always Extract `.data` Defensively
+
+Data arrives as LangFlow `Data` objects, but sometimes as plain dicts. Every component should start with:
+
+```python
+data = self.input.data if hasattr(self.input, "data") else self.input
+```
+
+This one-liner saved me from dozens of `AttributeError` crashes across the pipeline.
+
+#### Do: Design for Parallel Execution Paths
+
+Our pipeline branches after EmailParser — DataStructurer and AutoUnsubscribeToggle run in parallel, then both feed into FinalOutputAggregator. LangFlow handles this naturally through its edge system. Design your pipelines with parallelism in mind: if two agents don't depend on each other's output, let them run simultaneously.
+
+#### Don't: Trust LLM Output Without Structure
+
+LLMs love adding extra commentary, wrapping JSON in markdown fences, or "improving" your table format. Our Gemini prompts are extremely specific — we provide exact column headers, sorting rules, and output format. Even then, we set temperature to `0.1` for the mailer list to minimize creative interpretation. The summary report gets `0.3` because we want some analytical insight, but still structured.
+
+#### Don't: Use `output_types` on Nodes
+
+This is a LangFlow-specific gotcha. The `output_types` field in the node definition must ALWAYS be an empty array `[]`. Your actual outputs go in the `outputs` array. Setting `output_types` to anything else causes silent import failures.
+
+#### Don't: Forget Rate Limiting and Async Concurrency Controls
+
+Our AutoUnsubscribeToggle hits external URLs to unsubscribe — potentially dozens in rapid succession. Without concurrency limits, you'll trigger rate limiting, IP blocks, or worse. We use an asyncio semaphore (`max_concurrent=5`) and configurable request timeouts. Same principle applies to LLM calls: add a `time.sleep(1.0)` between Gemini requests if you're calling in a loop.
+
+#### Don't: Build Destructive Agents Without a Dry Run Mode
+
+Our auto-unsubscribe agent defaults to `dry_run=True` — it identifies the unsubscribe URLs and logs what it *would* do, but doesn't actually hit them. This alone prevented dozens of unintended unsubscribes during testing. Any agent that takes irreversible actions (sending HTTP requests, deleting data, modifying external state) should have a dry run toggle as the **default**.
+
+---
+
+### The Ruleset That Lets AI Build AI Agents
+
+This is the part that changed everything. We needed to generate LangFlow-compatible JSON — a format with extremely specific requirements (a special Unicode character `œ` in edge handles, exact field structures, precise type matching). Manually writing this JSON is error-prone. So we wrote a **ruleset document** and let AI generate the workflows.
+
+The ruleset — `LANGFLOW_JSON_RULEBOOK.md` — is a 760-line document that specifies every structural rule for valid LangFlow JSON:
+
+- Exact node structure with all 18 required fields
+- Every input type (`HandleInput`, `SecretStrInput`, `BoolInput`, `DropdownInput`, etc.) with complete field specifications
+- Edge construction rules including the `œ` character encoding
+- A verification checklist with 20+ items
+
+Here's why this matters: when you give this ruleset as context to an AI coding assistant, it can generate **perfectly valid** LangFlow components and workflow JSON on the first try. The AI doesn't need to understand LangFlow internals — it just follows the rules.
+
+The approach was:
+
+1. **Reverse-engineer the format**: Import a working flow into LangFlow, export it, and study every field
+2. **Document every rule**: Not just what the fields are, but what breaks when they're wrong
+3. **Include anti-patterns**: A "Common Mistakes" table with 14 specific errors and their corrections
+4. **Add templates**: Copy-paste-ready JSON skeletons for nodes and edges
+
+Combined with a **Workflow Blueprint** (the high-level architecture — what agents exist, how they connect, what data flows between them), an AI assistant can:
+
+- Generate a new agent component from a description
+- Wire it into the existing pipeline correctly
+- Produce a complete workflow JSON with correct edge handles
+- Add new features (like we added auto-unsubscribe as a parallel branch) without breaking existing connections
+
+This is **agents building agents** — not in a recursive AGI sense, but in the practical sense of having a well-specified ruleset that makes AI-assisted code generation reliable and repeatable.
+
+### How the Ruleset Works in Practice
+
+Let's say you want to add a new agent — a "PhishingDetector" that flags suspicious emails. With the ruleset, you tell the AI:
+
+> "Add a PhishingDetector node between EmailParser and FinalOutputAggregator. It should take parsed_emails as input, use Gemini to analyze sender patterns, and output a risk report."
+
+The AI reads the ruleset and knows:
+
+- The node needs `HandleInput` with `input_types=["Data"]` for the connection (not `MessageTextInput`)
+- The `output_types` field on the node must be `[]` (empty array)
+- Edge handles must use the `œ` character, not quotes
+- The `data.type` field must be the class name without suffix
+- The `code.value` field must contain valid Python that imports from `langflow.custom`
+
+Without the ruleset, the AI would guess at these details and produce broken JSON. With it, the workflow imports cleanly on the first try. We tested this repeatedly — the ruleset eliminated every "import failed" error we had.
+
+The key sections that matter most:
+
+- **Section 5.2a** (HandleInput vs MessageTextInput) — the #1 source of broken imports
+- **Section 6** (Edge structure) — the `œ` character encoding is non-obvious and critical
+- **Section 9** (Complete checklist) — 20+ verification items to run before generating
+
+---
+
+### Getting Gemini API Keys (Free Tier)
+
+Two of our agents — GeminiSummarizer and GeminiMailerList — use Google's Gemini API to analyze structured email data and produce human-readable reports. The free tier is generous enough for development and light production use.
+
+Here's how to get set up:
+
+1. Go to [Google AI Studio](https://aistudio.google.com/)
+2. Sign in with your Google account
+3. Click **"Get API Key"** in the left sidebar
+4. Click **"Create API Key"** — select any GCP project (or create one)
+5. Copy the key — that's your `GEMINI_API_KEY`
+
+The free tier gives you:
+- **Gemini 2.5 Flash**: 500 requests/day, more than enough for analyzing hundreds of emails
+- **Gemini 2.5 Pro**: 50 requests/day, better for complex analysis
+
+In LangFlow, paste the key into the `Google API Key` field on the Gemini nodes. Both our summarizer nodes use **Flash** by default — it's fast, cheap, and the quality is solid for structured report generation.
+
+A practical tip: set the temperature low (`0.1`–`0.3`) for report generation. You want deterministic, structured output — not creative writing. Our mailer list table uses `0.1` to ensure consistent markdown table formatting every time.
+
+---
+
+### Key Takeaways
+
+- **Docker + LangFlow** eliminates installation friction. One `docker run` and you're building agents
+- **Gemini's free tier** is more than enough for development — 500 req/day on Flash covers most pipelines
+- **HandleInput vs MessageTextInput** — get this wrong and nothing works. Connection inputs need `HandleInput`
+- **Parallel paths** in LangFlow are free — design your pipeline to branch and merge where possible
+- **Dry run modes** on any agent that takes irreversible actions. Default to safe, opt into destructive
+- **Low temperature** for structured LLM output. Save the creativity for summaries, not tables
+- **Rulesets > documentation** when it comes to AI-assisted development. A precise, exhaustive specification lets AI generate correct code without trial and error
+- **Async concurrency controls** for any agent hitting external services. Semaphores and timeouts are not optional
+
+The biggest lesson from this project is simple: **AI systems become reliable when the rules around them are precise.**
+
+A 760-line rulebook may sound excessive, but it eliminated every "import failed" error in our workflows and allowed AI assistants to generate new agents correctly on the first try.
+
+In other words, the real challenge in building AI agents isn't intelligence — it's structure.
+
+Once the structure is right, the agents practically build themselves.
+
+---
+
+*The full project — including the LangFlow JSON Rulebook and all 8 agent source files — is open and available for reference. If you're building multi-agent pipelines with LangFlow, start with the ruleset. Everything else gets easier after that.*
