@@ -12,6 +12,7 @@ import Silfra from '@/images/logos/silfra.png'
 import Tekion from '@/images/logos/tekion.png'
 import Guidewire from '@/images/logos/guidewire.png'
 import Protrainy from '@/images/logos/protrainy.png'
+import AwsDataEngineer from '@/images/logos/aws-data-engineer.png'
 import { getAllArticles } from '@/lib/articles'
 import { formatDate } from '@/lib/formatDate'
 
@@ -152,17 +153,17 @@ function Certificate({ certificate }) {
       ? certificate.start
       : certificate.start.label
 
-  return (
-    <li className="flex gap-4">
+  let body = (
+    <>
       <div className="relative mt-1 flex h-10 w-10 flex-none items-center justify-center rounded-full shadow-md shadow-zinc-800/5 ring-1 ring-zinc-900/5 dark:border dark:border-zinc-700/50 dark:bg-zinc-800 dark:ring-0">
         <Image src={certificate.logo} alt="" className="h-7 w-7" unoptimized />
       </div>
       <dl className="flex flex-auto flex-wrap gap-x-2">
-        <dt className="sr-only">Company</dt>
+        <dt className="sr-only">Certification</dt>
         <dd className="w-full flex-none text-sm font-medium text-zinc-900 dark:text-zinc-100">
           {certificate.company}
         </dd>
-        <dt className="sr-only">Title</dt>
+        <dt className="sr-only">Issuer</dt>
         <dd className="text-xs text-zinc-500 dark:text-zinc-400">
           {certificate.title}
         </dd>
@@ -171,6 +172,24 @@ function Certificate({ certificate }) {
           <time dateTime={certificate.start}>{startLabel}</time>{' '}
         </dd>
       </dl>
+    </>
+  )
+
+  return (
+    <li className="flex gap-4">
+      {certificate.href ? (
+        <Link
+          href={certificate.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-auto gap-4 transition hover:opacity-80"
+          aria-label={`Verify ${certificate.company}`}
+        >
+          {body}
+        </Link>
+      ) : (
+        body
+      )}
     </li>
   )
 }
@@ -178,44 +197,27 @@ function Certificate({ certificate }) {
 function Certificates() {
   let certificates = [
     {
-      company: 'React.js Development',
-      title: 'TECH MENTORS',
-      logo: Guidewire,
-      start: '2024',
-    },
-    {
-      company: 'Software Testing',
-      title: 'EDUONIX',
-      logo: Brane,
-      start: '2022',
-    },
-    {
-      company: 'NodeJS Development',
-      title: 'KPITB',
-      logo: Guidewire,
-      start: '2021',
-    },
-    {
-      company: 'WordPress Development',
-      title: 'KPYOUTH',
-      logo: Guidewire,
-      start: '2018',
+      company: 'AWS Certified Data Engineer – Associate',
+      title: 'Amazon Web Services',
+      logo: AwsDataEngineer,
+      start: 'Apr 2026',
+      href: 'https://aws.amazon.com/verification',
     },
   ]
 
-  // return (
-  //   <div className="rounded-2xl border border-zinc-100 p-6 dark:border-zinc-700/40">
-  //     <h2 className="flex text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-  //       <CertificationsIcon className="h-6 w-6 flex-none" />
-  //       <span className="ml-3">Certifications</span>
-  //     </h2>
-  //     <ol className="mt-6 space-y-4">
-  //       {certificates.map((certificate, index) => (
-  //         <Certificate key={index} certificate={certificate} />
-  //       ))}
-  //     </ol>
-  //   </div>
-  // )
+  return (
+    <div className="rounded-2xl border border-zinc-100 p-6 dark:border-zinc-700/40">
+      <h2 className="flex text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+        <CertificationsIcon className="h-6 w-6 flex-none" />
+        <span className="ml-3">Certifications</span>
+      </h2>
+      <ol className="mt-6 space-y-4">
+        {certificates.map((certificate, index) => (
+          <Certificate key={index} certificate={certificate} />
+        ))}
+      </ol>
+    </div>
+  )
 }
 
 function Resume() {
@@ -298,6 +300,9 @@ export default async function Home() {
           </h1>
           <p className="mt-6 text-base text-zinc-600 dark:text-zinc-400">
             I'm a Data & Backend Engineer with 4 years of experience building scalable systems across insurance and automotive domains. Currently at Guidewire, I design data pipelines and backend services using Kafka, AWS Glue, EMR, Athena, and Iceberg. I enjoy diving deep into distributed systems and exploring modern data lakehouse architectures.
+          </p>
+          <p className="mt-4 text-base font-medium text-zinc-700 dark:text-zinc-300">
+            AWS Certified Data Engineer
           </p>
           <div className="mt-6 flex gap-6 items-center flex-wrap">
             <SocialLink
